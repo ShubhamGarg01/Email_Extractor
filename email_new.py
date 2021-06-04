@@ -30,8 +30,6 @@ class GmailFinin():
         self.mail = imaplib.IMAP4_SSL("imap.gmail.com", 993)
         if self.mail.login(self.usr, self.pwd):
             print("\nLogon SUCCESSFUL")
-            self.destFolder = input("\nPlease choose a destination folder in the form of /Users/username/dest/ (do not forget trailing slash!): ")
-            if not self.destFolder.endswith("/"): self.destFolder+="/"
             return True
         else:
             print("\nLogon FAILED")
@@ -80,51 +78,54 @@ class GmailFinin():
 
             uid = raw_str.split()[2]
             # Body #
-            if msg.is_multipart():
-                for part in msg.walk():
-                    partType = part.get_content_type()
-                    ## Get Body ##
-                    if partType == "text/plain" and "attachment" not in part:
-                        jsonOutput['body'] = part.get_payload()
-                        key,companyemail='Payment ID','support@instamojo.com'
-                        values=['ID' ,'Email','number']
-                        lst=[]
-                        if (key and companyemail) in jsonOutput['body']:
-                            for i in range(len(jsonOutput['body'].split())):
-                                if jsonOutput['body'].split()[i] in values:
-                                    lst.append(jsonOutput['body'].split()[i+1])
-                        print(lst)
-                        # file=pd.read_csv('data.csv')
-                        if lst:
-                            df=pd.DataFrame([lst])
-                            print(df)
-                            try:
-                                if not lst[0] in pd.read_csv('data.csv').ID:
+            try:
+                if msg.is_multipart():
+                    for part in msg.walk():
+                        partType = part.get_content_type()
+                        ## Get Body ##
+                        if partType == "text/plain" and "attachment" not in part:
+                            jsonOutput['body'] = part.get_payload()
+                            key,companyemail='Payment ID','support@instamojo.com'
+                            values=['ID' ,'Email','number']
+                            lst=[]
+                            if (key and companyemail) in jsonOutput['body']:
+                                for i in range(len(jsonOutput['body'].split())):
+                                    if jsonOutput['body'].split()[i] in values:
+                                        lst.append(jsonOutput['body'].split()[i+1])
+                            print(lst)
+                            # file=pd.read_csv('data.csv')
+                            if lst:
+                                df=pd.DataFrame([lst])
+                                print(df)
+                                try:
+                                    if not lst[0] in pd.read_csv('data.csv').ID:
+                                        df.to_csv('data.csv',index=False,header=['ID','Email','number'])
+                                except:
                                     df.to_csv('data.csv',index=False,header=['ID','Email','number'])
-                            except:
-                                df.to_csv('data.csv',index=False,header=['ID','Email','number'])
 
-                    ## Get Attachments ##
-                    # if part.get('Content-Disposition') is not None:
-                    #     attchName = part.get_filename()
-                    #     print(attchName)
-                    #     if bool(attchName):
-                    #         attchFilePath = str(self.destFolder)+str(uid)+str("/")+str(attchName)
-                    #         print(attchFilePath)
-                    #         os.makedirs(os.path.dirname(attchFilePath), exist_ok=True)
-                    #         with open(attchFilePath, "wb") as f:
-                    #             f.write(part.get_payload(decode=True))
-            else:
-                jsonOutput['body'] = msg.get_payload(decode=True).decode("utf-8") # Non-multipart email, perhaps no attachments or just text.
-                jsonOutput['body'] = msg.get_payload()
+                        ## Get Attachments ##
+                        # if part.get('Content-Disposition') is not None:
+                        #     attchName = part.get_filename()
+                        #     print(attchName)
+                        #     if bool(attchName):
+                        #         attchFilePath = str(self.destFolder)+str(uid)+str("/")+str(attchName)
+                        #         print(attchFilePath)
+                        #         os.makedirs(os.path.dirname(attchFilePath), exist_ok=True)
+                        #         with open(attchFilePath, "wb") as f:
+                        #             f.write(part.get_payload(decode=True))
+                else:
+                    jsonOutput['body'] = msg.get_payload(decode=True).decode("utf-8") # Non-multipart email, perhaps no attachments or just text.
+                    jsonOutput['body'] = msg.get_payload()
 
 
-            outputDump = json.dumps(jsonOutput)
-            emailInfoFilePath = str(self.destFolder)+str(uid)+str("/")+str(uid)+str(".json")
-            os.makedirs(os.path.dirname(emailInfoFilePath), exist_ok=True)
-            print(emailInfoFilePath)
-            with open(emailInfoFilePath, "w") as f:
-                f.write(outputDump)
+                #outputDump = json.dumps(jsonOutput)
+                #emailInfoFilePath = str(self.destFolder)+str(uid)+str("/")+str(uid)+str(".json")
+                #os.makedirs(os.path.dirname(emailInfoFilePath), exist_ok=True)
+                #print(emailInfoFilePath)
+                #with open(emailInfoFilePath, "w") as f:
+                    #f.write(outputDump)
+            except:
+                pass
 
     def __init__(self):
         self.initializeVariables()
